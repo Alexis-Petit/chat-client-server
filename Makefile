@@ -1,8 +1,7 @@
 all:
 	$(CC) -Wall chat_server.c -O2 -lpthread -o chat_server
-
-debug:
-	$(CC) -Wall -g chat_server.c -O0 -lpthread -o chat_server_dbg
+	$(CC) -Wall chat_client.c -O2 -lpthread -o chat_client
 
 clean:
-	$(RM) -rf chat_server chat_server_dbg
+	$(RM) -rf chat_client 
+	$(RM) -rf chat_client

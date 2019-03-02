@@ -20,6 +20,9 @@
 #include <signal.h>
 
 #define MAX_CLIENTS	100
+#define LENGTH_SEND 201
+#define LENGTH_SEND_ALL 2048
+
 
 static unsigned int cli_count = 0;
 static int uid = 10;
@@ -64,7 +67,7 @@ void send_message(char *s, int uid){
 	for(i=0;i<MAX_CLIENTS;i++){
 		if(clients[i]){
 			if(clients[i]->uid != uid){
-				if(write(clients[i]->connfd, s, strlen(s))<0){
+				if(write(clients[i]->connfd, s, LENGTH_SEND)<0){
 					perror("write");
 					exit(-1);
 				}
@@ -78,7 +81,7 @@ void send_message_all(char *s){
 	int i;
 	for(i=0;i<MAX_CLIENTS;i++){
 		if(clients[i]){
-			if(write(clients[i]->connfd, s, strlen(s))<0){
+			if(write(clients[i]->connfd, s, LENGTH_SEND_ALL)<0){
 				perror("write");
 				exit(-1);
 			}
