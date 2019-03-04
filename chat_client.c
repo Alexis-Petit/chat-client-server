@@ -19,7 +19,7 @@ typedef struct {
 	int connfd;			/* Connection file descriptor */
 	int uid;			/* Client unique identifier */
 	char name[32];			/* Client name */
-} client_t;
+} client_struct;
 
 // Global variables
 volatile sig_atomic_t flag = 0;

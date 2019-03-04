@@ -1,12 +1,3 @@
-/*
- * Copyright 2014-2018
- *
- * Author: 		Yorick de Wid
- * Description:		Simple chatroom in C
- * Version:		1.0
- *
- */
-
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -25,20 +16,20 @@
 
 
 static unsigned int cli_count = 0;
-static int uid = 10;
+static int id = 10;
 
 /* Client structure */
 typedef struct {
 	struct sockaddr_in addr;	/* Client remote address */
-	int connfd;			/* Connection file descriptor */
-	int uid;			/* Client unique identifier */
-	char name[32];			/* Client name */
-} client_t;
+	int connfd;					/* Connection file descriptor */
+	int id;						/* Client unique identifier */
+	char name[32];				/* Client name */
+} client_struct;
 
-client_t *clients[MAX_CLIENTS];
+client_struct *clients[MAX_CLIENTS];
 
 /* Add client to queue */
-void queue_add(client_t *cl){
+void add_queue(client_struct *cl){
 	int i;
 	for(i=0;i<MAX_CLIENTS;i++){
 		if(!clients[i]){
@@ -49,11 +40,11 @@ void queue_add(client_t *cl){
 }
 
 /* Delete client from queue */
-void queue_delete(int uid){
+void delete_cli_from_queue(int id){
 	int i;
 	for(i=0;i<MAX_CLIENTS;i++){
 		if(clients[i]){
-			if(clients[i]->uid == uid){
+			if(clients[i]->id == id){
 				clients[i] = NULL;
 				return;
 			}
@@ -62,11 +53,11 @@ void queue_delete(int uid){
 }
 
 /* Send message to all clients but the sender */
-void send_message(char *s, int uid){
+void send_message(char *s, int id){
 	int i;
 	for(i=0;i<MAX_CLIENTS;i++){
 		if(clients[i]){
-			if(clients[i]->uid != uid){
+			if(clients[i]->id != id){
 				if(write(clients[i]->connfd, s, LENGTH_SEND)<0){
 					perror("write");
 					exit(-1);
@@ -98,11 +89,11 @@ void send_message_self(const char *s, int connfd){
 }
 
 /* Send message to client */
-void send_message_client(char *s, int uid){
+void send_message_client(char *s, int id){
 	int i;
 	for(i=0;i<MAX_CLIENTS;i++){
 		if(clients[i]){
-			if(clients[i]->uid == uid){
+			if(clients[i]->id == id){
 				if(write(clients[i]->connfd, s, strlen(s))<0){
 					perror("write");
 					exit(-1);
@@ -118,7 +109,7 @@ void send_active_clients(int connfd){
 	char s[64];
 	for(i=0;i<MAX_CLIENTS;i++){
 		if(clients[i]){
-			sprintf(s, "<<CLIENT %d | %s\r\n", clients[i]->uid, clients[i]->name);
+			sprintf(s, "<<CLIENT %d | %s\r\n", clients[i]->id, clients[i]->name);
 			send_message_self(s, connfd);
 		}
 	}
@@ -150,17 +141,17 @@ void *handle_client(void *arg){
 	int rlen;
 
 	cli_count++;
-	client_t *cli = (client_t *)arg;
+	client_struct *client= (client_struct *)arg;
 
 	printf("<<ACCEPT ");
-	print_client_addr(cli->addr);
-	printf(" REFERENCED BY %d\n", cli->uid);
+	print_client_addr(client->addr);
+	printf(" REFERENCED BY %d\n", client->id);
 
-	sprintf(buff_out, "<<JOIN, HELLO %s\r\n", cli->name);
+	sprintf(buff_out, "<<JOIN, HELLO %s\r\n", client->name);
 	send_message_all(buff_out);
 
 	/* Receive input from client */
-	while((rlen = read(cli->connfd, buff_in, sizeof(buff_in)-1)) > 0){
+	while((rlen = read(client->connfd, buff_in, sizeof(buff_in)-1)) > 0){
 	        buff_in[rlen] = '\0';
 	        buff_out[0] = '\0';
 		strip_newline(buff_in);
@@ -177,42 +168,42 @@ void *handle_client(void *arg){
 			if(!strcmp(command, "\\QUIT")){
 				break;
 			}else if(!strcmp(command, "\\PING")){
-				send_message_self("<<PONG\r\n", cli->connfd);
+				send_message_self("<<PONG\r\n", client->connfd);
 			}else if(!strcmp(command, "\\NAME")){
 				param = strtok(NULL, " ");
 				if(param){
-					char *old_name = strdup(cli->name);
-					strcpy(cli->name, param);
-					sprintf(buff_out, "<<RENAME, %s TO %s\r\n", old_name, cli->name);
+					char *old_name = strdup(client->name);
+					strcpy(client->name, param);
+					sprintf(buff_out, "<<RENAME, %s TO %s\r\n", old_name, client->name);
 					free(old_name);
 					send_message_all(buff_out);
 				}else{
-					send_message_self("<<NAME CANNOT BE NULL\r\n", cli->connfd);
+					send_message_self("<<NAME CANNOT BE NULL\r\n", client->connfd);
 				}
 			}else if(!strcmp(command, "\\PRIVATE")){
 				param = strtok(NULL, " ");
 				if(param){
-					int uid = atoi(param);
+					int id = atoi(param);
 					param = strtok(NULL, " ");
 					if(param){
-						sprintf(buff_out, "[PM][%s]", cli->name);
+						sprintf(buff_out, "[PM][%s]", client->name);
 						while(param != NULL){
 							strcat(buff_out, " ");
 							strcat(buff_out, param);
 							param = strtok(NULL, " ");
 						}
 						strcat(buff_out, "\r\n");
-						send_message_client(buff_out, uid);
+						send_message_client(buff_out, id);
 					}else{
-						send_message_self("<<MESSAGE CANNOT BE NULL\r\n", cli->connfd);
+						send_message_self("<<MESSAGE CANNOT BE NULL\r\n", client->connfd);
 					}
 				}else{
-					send_message_self("<<REFERENCE CANNOT BE NULL\r\n", cli->connfd);
+					send_message_self("<<REFERENCE CANNOT BE NULL\r\n", client->connfd);
 				}
 			}else if(!strcmp(command, "\\ACTIVE")){
 				sprintf(buff_out, "<<CLIENTS %d\r\n", cli_count);
-				send_message_self(buff_out, cli->connfd);
-				send_active_clients(cli->connfd);
+				send_message_self(buff_out, client->connfd);
+				send_active_clients(client->connfd);
 			}else if(!strcmp(command, "\\HELP")){
 				strcat(buff_out, "\\QUIT     Quit chatroom\r\n");
 				strcat(buff_out, "\\PING     Server test\r\n");
@@ -220,28 +211,28 @@ void *handle_client(void *arg){
 				strcat(buff_out, "\\PRIVATE  <reference> <message> Send private message\r\n");
 				strcat(buff_out, "\\ACTIVE   Show active clients\r\n");
 				strcat(buff_out, "\\HELP     Show help\r\n");
-				send_message_self(buff_out, cli->connfd);
+				send_message_self(buff_out, client->connfd);
 			}else{
-				send_message_self("<<UNKOWN COMMAND\r\n", cli->connfd);
+				send_message_self("<<UNKOWN COMMAND\r\n", client->connfd);
 			}
 		}else{
 			/* Send message */
-			snprintf(buff_out, sizeof(buff_out), "[%s] %s\r\n", cli->name, buff_in);
-			send_message(buff_out, cli->uid);
+			snprintf(buff_out, sizeof(buff_out), "[%s] %s\r\n", client->name, buff_in);
+			send_message(buff_out, client->id);
 		}
 	}
 
 	/* Close connection */
-	sprintf(buff_out, "<<LEAVE, BYE %s\r\n", cli->name);
+	sprintf(buff_out, "<<LEAVE, BYE %s\r\n", client->name);
 	send_message_all(buff_out);
-	close(cli->connfd);
+	close(client->connfd);
 
 	/* Delete client from queue and yield thread */
-	queue_delete(cli->uid);
+	delete_cli_from_queue(client->id);
 	printf("<<LEAVE ");
-	print_client_addr(cli->addr);
-	printf(" REFERENCED BY %d\n", cli->uid);
-	free(cli);
+	print_client_addr(client->addr);
+	printf(" REFERENCED BY %d\n", client->id);
+	free(client);
 	cli_count--;
 	pthread_detach(pthread_self());
 
@@ -293,15 +284,15 @@ int main(int argc, char *argv[]){
 		}
 
 		/* Client settings */
-		client_t *cli = (client_t *)malloc(sizeof(client_t));
-		cli->addr = cli_addr;
-		cli->connfd = connfd;
-		cli->uid = uid++;
-		sprintf(cli->name, "%d", cli->uid);
+		client_struct *client= (client_struct *)malloc(sizeof(client_struct));
+		client->addr = cli_addr;
+		client->connfd = connfd;
+		client->id = id++;
+		sprintf(client->name, "%d", client->id);
 
 		/* Add client to the queue and fork thread */
-		queue_add(cli);
-		pthread_create(&tid, NULL, &handle_client, (void*)cli);
+		add_queue(client);
+		pthread_create(&tid, NULL, &handle_client, (void*)client);
 
 		/* Reduce CPU usage */
 		sleep(1);
