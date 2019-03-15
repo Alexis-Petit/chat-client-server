@@ -150,18 +150,18 @@ void *handle_client(void *arg){
 	sprintf(buff_out, "<<JOIN, HELLO %s\r\n", client->name);
 	send_message_all(buff_out);
 
-	/* Receive input from client */
+	/* Recois les donnees du client */
 	while((rlen = read(client->connfd, buff_in, sizeof(buff_in)-1)) > 0){
 	        buff_in[rlen] = '\0';
 	        buff_out[0] = '\0';
 		strip_newline(buff_in);
 
-		/* Ignore empty buffer */
+		/* Ignore les buffer vide */
 		if(!strlen(buff_in)){
 			continue;
 		}
 
-		/* Special options */
+		/* Options specials */
 		if(buff_in[0] == '\\'){
 			char *command, *param;
 			command = strtok(buff_in," ");
@@ -216,13 +216,13 @@ void *handle_client(void *arg){
 				send_message_self("<<UNKOWN COMMAND\r\n", client->connfd);
 			}
 		}else{
-			/* Send message */
+			/* Envois un message */
 			snprintf(buff_out, sizeof(buff_out), "[%s] %s\r\n", client->name, buff_in);
 			send_message(buff_out, client->id);
 		}
 	}
 
-	/* Close connection */
+	/* Ferme les connections */
 	sprintf(buff_out, "<<LEAVE, BYE %s\r\n", client->name);
 	send_message_all(buff_out);
 	close(client->connfd);
@@ -251,16 +251,15 @@ int main(int argc, char *argv[]){
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 	serv_addr.sin_port = htons(5000);
 
-	/* Ignore pipe signals */
+	/* Ignore les pipe signals */
 	signal(SIGPIPE, SIG_IGN);
 
-	/* Bind */
 	if(bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0){
 		perror("Socket binding failed");
 		return 1;
 	}
 
-	/* Listen */
+	/* Ecoute */
 	if(listen(listenfd, 10) < 0){
 		perror("Socket listening failed");
 		return 1;
@@ -294,7 +293,7 @@ int main(int argc, char *argv[]){
 		add_queue(client);
 		pthread_create(&tid, NULL, &handle_client, (void*)client);
 
-		/* Reduce CPU usage */
+		/* Reduit l'usage du CPU */
 		sleep(1);
 	}
 }
