@@ -20,15 +20,15 @@ static int id = 10;
 
 /* Client structure */
 typedef struct {
-	struct sockaddr_in addr;	/* Client remote address */
+	struct sockaddr_in addr;	/* adresse Client à distance */
 	int connfd;					/* Connection file descriptor */
-	int id;						/* Client unique identifier */
-	char name[32];				/* Client name */
+	int id;						/* id du Client unique */
+	char name[32];				/* nom du Client */
 } client_struct;
 
 client_struct *clients[MAX_CLIENTS];
 
-/* Add client to queue */
+/* Ajoute le client a la file */
 void add_queue(client_struct *cl){
 	int i;
 	for(i=0;i<MAX_CLIENTS;i++){
@@ -39,7 +39,7 @@ void add_queue(client_struct *cl){
 	}
 }
 
-/* Delete client from queue */
+/* Supprime le client de la file */
 void delete_cli_from_queue(int id){
 	int i;
 	for(i=0;i<MAX_CLIENTS;i++){
@@ -52,7 +52,7 @@ void delete_cli_from_queue(int id){
 	}
 }
 
-/* Send message to all clients but the sender */
+/* Envois un message à tous les clients sauf l'emetteur */
 void send_message(char *s, int id){
 	int i;
 	for(i=0;i<MAX_CLIENTS;i++){
@@ -67,7 +67,7 @@ void send_message(char *s, int id){
 	}
 }
 
-/* Send message to all clients */
+/* Envois un message à tous les clients */
 void send_message_all(char *s){
 	int i;
 	for(i=0;i<MAX_CLIENTS;i++){
@@ -80,7 +80,7 @@ void send_message_all(char *s){
 	}
 }
 
-/* Send message to sender */
+/* Envois un message à l'emetteur */
 void send_message_self(const char *s, int connfd){
 	if(write(connfd, s, strlen(s))<0){
 		perror("write");
@@ -88,7 +88,7 @@ void send_message_self(const char *s, int connfd){
 	}
 }
 
-/* Send message to client */
+/* Envois un message au client */
 void send_message_client(char *s, int id){
 	int i;
 	for(i=0;i<MAX_CLIENTS;i++){
@@ -103,7 +103,7 @@ void send_message_client(char *s, int id){
 	}
 }
 
-/* Send list of active clients */
+/* Envois un message a la liste de clients actifs */
 void send_active_clients(int connfd){
 	int i;
 	char s[64];
@@ -115,7 +115,7 @@ void send_active_clients(int connfd){
 	}
 }
 
-/* Strip CRLF */
+/* Enleve les retour chariot */
 void strip_newline(char *s){
 	while(*s != '\0'){
 		if(*s == '\r' || *s == '\n'){
@@ -125,7 +125,7 @@ void strip_newline(char *s){
 	}
 }
 
-/* Print ip address */
+/* Affiche l'adresse ip */
 void print_client_addr(struct sockaddr_in addr){
 	printf("%d.%d.%d.%d",
 		addr.sin_addr.s_addr & 0xFF,
@@ -134,7 +134,7 @@ void print_client_addr(struct sockaddr_in addr){
 		(addr.sin_addr.s_addr & 0xFF000000)>>24);
 }
 
-/* Handle all communication with the client */
+/* Gere la communication avec tous les clients */
 void *handle_client(void *arg){
 	char buff_out[2048];
 	char buff_in[1024];
@@ -227,7 +227,7 @@ void *handle_client(void *arg){
 	send_message_all(buff_out);
 	close(client->connfd);
 
-	/* Delete client from queue and yield thread */
+	/* Supprime un client de la file and yield thread */
 	delete_cli_from_queue(client->id);
 	printf("<<LEAVE ");
 	print_client_addr(client->addr);
@@ -245,7 +245,7 @@ int main(int argc, char *argv[]){
 	struct sockaddr_in cli_addr;
 	pthread_t tid;
 
-	/* Socket settings */
+	/* Paramètre des sockets */
 	listenfd = socket(AF_INET, SOCK_STREAM, 0);
 	serv_addr.sin_family = AF_INET;
 	serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -268,12 +268,12 @@ int main(int argc, char *argv[]){
 
 	printf("<[SERVER STARTED]>\n");
 
-	/* Accept clients */
+	/* Accepter les clients */
 	while(1){
 		socklen_t clilen = sizeof(cli_addr);
 		connfd = accept(listenfd, (struct sockaddr*)&cli_addr, &clilen);
 
-		/* Check if max clients is reached */
+		/* Regarde si on peut encore accepter des clients */
 		if((cli_count+1) == MAX_CLIENTS){
 			printf("<<MAX CLIENTS REACHED\n");
 			printf("<<REJECT ");
@@ -283,14 +283,14 @@ int main(int argc, char *argv[]){
 			continue;
 		}
 
-		/* Client settings */
+		/* Parametre des clients */
 		client_struct *client= (client_struct *)malloc(sizeof(client_struct));
 		client->addr = cli_addr;
 		client->connfd = connfd;
 		client->id = id++;
 		sprintf(client->name, "%d", client->id);
 
-		/* Add client to the queue and fork thread */
+		/* ajoute le client à la file et fork un thread */
 		add_queue(client);
 		pthread_create(&tid, NULL, &handle_client, (void*)client);
 
