@@ -14,13 +14,6 @@
 #define LENGTH_MSG 101
 #define LENGTH_SEND 201
 
-typedef struct {
-	struct sockaddr_in addr;	/* Client remote address */
-	int connfd;			/* Connection file descriptor */
-	int uid;			/* Client unique identifier */
-	char name[32];			/* Client name */
-} client_struct;
-
 // Global variables
 volatile sig_atomic_t flag = 0;
 int sockfd = 0;
