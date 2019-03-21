@@ -147,7 +147,7 @@ void *handle_client(void *arg){
 	print_client_addr(client->addr);
 	printf("id client %d\n", client->id);
 
-	sprintf(buff_out, "<<Bonjour : %s. \\HELP liste commandes disponibles", client->name);
+	sprintf(buff_out, "<<Bonjour : %s. \\HELP liste commandes disponibles \n\r", client->name);
 	send_message_all(buff_out);
 
 	/* Recois les donnees du client */
