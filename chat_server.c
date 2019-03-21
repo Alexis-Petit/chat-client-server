@@ -143,11 +143,11 @@ void *handle_client(void *arg){
 	cli_count++;
 	client_struct *client= (client_struct *)arg;
 
-	printf("<<ACCEPT ");
+	printf("<<Nouveau client sur ");
 	print_client_addr(client->addr);
-	printf(" REFERENCED BY %d\n", client->id);
+	printf("id client %d\n", client->id);
 
-	sprintf(buff_out, "<<JOIN, HELLO %s\r\n", client->name);
+	sprintf(buff_out, "<<Bonjour %s\r\n", client->name);
 	send_message_all(buff_out);
 
 	/* Recois les donnees du client */
@@ -169,7 +169,7 @@ void *handle_client(void *arg){
 				break;
 			}else if(!strcmp(command, "\\PING")){
 				send_message_self("<<PONG\r\n", client->connfd);
-			}else if(!strcmp(command, "\\NAME")){
+			}else if(!strcmp(command, "\\RENAME")){
 				param = strtok(NULL, " ");
 				if(param){
 					char *old_name = strdup(client->name);
@@ -178,7 +178,7 @@ void *handle_client(void *arg){
 					free(old_name);
 					send_message_all(buff_out);
 				}else{
-					send_message_self("<<NAME CANNOT BE NULL\r\n", client->connfd);
+					send_message_self("<<Le nom ne peut etre null\r\n", client->connfd);
 				}
 			}else if(!strcmp(command, "\\PRIVATE")){
 				param = strtok(NULL, " ");
@@ -195,25 +195,25 @@ void *handle_client(void *arg){
 						strcat(buff_out, "\r\n");
 						send_message_client(buff_out, id);
 					}else{
-						send_message_self("<<MESSAGE CANNOT BE NULL\r\n", client->connfd);
+						send_message_self("<<Le message ne peut etre null\r\n", client->connfd);
 					}
 				}else{
-					send_message_self("<<REFERENCE CANNOT BE NULL\r\n", client->connfd);
+					send_message_self("<<La reference ne peut etre null\r\n", client->connfd);
 				}
-			}else if(!strcmp(command, "\\ACTIVE")){
+			}else if(!strcmp(command, "\\LIST")){
 				sprintf(buff_out, "<<CLIENTS %d\r\n", cli_count);
 				send_message_self(buff_out, client->connfd);
 				send_active_clients(client->connfd);
 			}else if(!strcmp(command, "\\HELP")){
-				strcat(buff_out, "\\QUIT     Quit chatroom\r\n");
-				strcat(buff_out, "\\PING     Server test\r\n");
-				strcat(buff_out, "\\NAME     <name> Change nickname\r\n");
-				strcat(buff_out, "\\PRIVATE  <reference> <message> Send private message\r\n");
-				strcat(buff_out, "\\ACTIVE   Show active clients\r\n");
-				strcat(buff_out, "\\HELP     Show help\r\n");
+				strcat(buff_out, "\\QUIT     Quitte le chatroom\r\n");
+				strcat(buff_out, "\\PING     Interroge le serveur\r\n");
+				strcat(buff_out, "\\RENAME   <name> Change le surnom\r\n");
+				strcat(buff_out, "\\PRIVATE  <id destinataire> <message> Envoyer message privé\r\n");
+				strcat(buff_out, "\\LIST     Liste des clients actifs\r\n");
+				strcat(buff_out, "\\HELP     Liste des commandes\r\n");
 				send_message_self(buff_out, client->connfd);
 			}else{
-				send_message_self("<<UNKOWN COMMAND\r\n", client->connfd);
+				send_message_self("<<commande inconnu\r\n", client->connfd);
 			}
 		}else{
 			/* Envois un message */
@@ -223,15 +223,15 @@ void *handle_client(void *arg){
 	}
 
 	/* Ferme les connections */
-	sprintf(buff_out, "<<LEAVE, BYE %s\r\n", client->name);
+	sprintf(buff_out, "<<A plus ! %s\r\n", client->name);
 	send_message_all(buff_out);
 	close(client->connfd);
 
-	/* Supprime un client de la file and yield thread */
+	/* Supprime un client de la file et supprime le thread */
 	delete_cli_from_queue(client->id);
-	printf("<<LEAVE ");
+	printf("<<Aurevoir ");
 	print_client_addr(client->addr);
-	printf(" REFERENCED BY %d\n", client->id);
+	printf(" id client %d\n", client->id);
 	free(client);
 	cli_count--;
 	pthread_detach(pthread_self());
@@ -255,17 +255,17 @@ int main(int argc, char *argv[]){
 	signal(SIGPIPE, SIG_IGN);
 
 	if(bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr)) < 0){
-		perror("Socket binding failed");
+		perror("Echec de l'association de socket");
 		return 1;
 	}
 
 	/* Ecoute */
 	if(listen(listenfd, 10) < 0){
-		perror("Socket listening failed");
+		perror("Echec de l'ecoute de socket");
 		return 1;
 	}
 
-	printf("<[SERVER STARTED]>\n");
+	printf("<[SERVEUR DEMARRE]>\n");
 
 	/* Accepter les clients */
 	while(1){
@@ -274,8 +274,8 @@ int main(int argc, char *argv[]){
 
 		/* Regarde si on peut encore accepter des clients */
 		if((cli_count+1) == MAX_CLIENTS){
-			printf("<<MAX CLIENTS REACHED\n");
-			printf("<<REJECT ");
+			printf("<<CLIENTS MAX ATTEINT\n");
+			printf("<<REJETE ");
 			print_client_addr(cli_addr);
 			printf("\n");
 			close(connfd);
