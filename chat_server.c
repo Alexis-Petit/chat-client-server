@@ -82,7 +82,7 @@ void send_message_all(char *s){
 
 /* Envois un message à l'emetteur */
 void send_message_self(const char *s, int connfd){
-	if(write(connfd, s, strlen(s))<0){
+	if(write(connfd, s, strlen(s)+1)<0){
 		perror("write");
 		exit(-1);
 	}
@@ -127,7 +127,7 @@ void strip_newline(char *s){
 
 /* Affiche l'adresse ip */
 void print_client_addr(struct sockaddr_in addr){
-	printf("%d.%d.%d.%d",
+	printf("%d.%d.%d.%d\n",
 		addr.sin_addr.s_addr & 0xFF,
 		(addr.sin_addr.s_addr & 0xFF00)>>8,
 		(addr.sin_addr.s_addr & 0xFF0000)>>16,
@@ -147,7 +147,7 @@ void *handle_client(void *arg){
 	print_client_addr(client->addr);
 	printf("id client %d\n", client->id);
 
-	sprintf(buff_out, "<<Bonjour %s\r\n", client->name);
+	sprintf(buff_out, "<<Bonjour : %s. \\HELP liste commandes disponibles", client->name);
 	send_message_all(buff_out);
 
 	/* Recois les donnees du client */
@@ -205,12 +205,12 @@ void *handle_client(void *arg){
 				send_message_self(buff_out, client->connfd);
 				send_active_clients(client->connfd);
 			}else if(!strcmp(command, "\\HELP")){
+				strcat(buff_out, "\\HELP     Liste commandes\r\n");
 				strcat(buff_out, "\\QUIT     Quitte le chatroom\r\n");
 				strcat(buff_out, "\\PING     Interroge le serveur\r\n");
 				strcat(buff_out, "\\RENAME   <name> Change le surnom\r\n");
-				strcat(buff_out, "\\PRIVATE  <id destinataire> <message> Envoyer message privé\r\n");
-				strcat(buff_out, "\\LIST     Liste des clients actifs\r\n");
-				strcat(buff_out, "\\HELP     Liste des commandes\r\n");
+				strcat(buff_out, "\\PRIVATE  <id dest> <msg> message prive\r\n");
+				strcat(buff_out, "\\LIST     Liste clients actifs\r\n");
 				send_message_self(buff_out, client->connfd);
 			}else{
 				send_message_self("<<commande inconnu\r\n", client->connfd);
