@@ -106,6 +106,7 @@ int main()
     getpeername(sockfd, (struct sockaddr*) &server_info, (socklen_t*) &s_addrlen);
     printf("Connecte au serveur: %s:%d\n", inet_ntoa(server_info.sin_addr), ntohs(server_info.sin_port));
     printf("Vous etes : %s:%d\n", inet_ntoa(client_info.sin_addr), ntohs(client_info.sin_port));
+    printf("Entrer '\\HELP' pour voir la liste des fonctionnalités \n");
 
     send(sockfd, "", LENGTH_NAME, 0);
 

@@ -147,7 +147,7 @@ void *handle_client(void *arg){
 	print_client_addr(client->addr);
 	printf("id client %d\n", client->id);
 
-	sprintf(buff_out, "<<Bonjour : %s. \\HELP liste commandes disponibles \n\r", client->name);
+	sprintf(buff_out, "<<Client : %s connectee. \n\r", client->name);
 	send_message_all(buff_out);
 
 	/* Recois les donnees du client */
@@ -200,7 +200,7 @@ void *handle_client(void *arg){
 				}else{
 					send_message_self("<<La reference ne peut etre null\r\n", client->connfd);
 				}
-			}else if(!strcmp(command, "\\LIST")){
+			}else if(!strcmp(command, "\\NB_CLIENT")){
 				sprintf(buff_out, "<<CLIENTS %d\r\n", cli_count);
 				send_message_self(buff_out, client->connfd);
 				send_active_clients(client->connfd);
