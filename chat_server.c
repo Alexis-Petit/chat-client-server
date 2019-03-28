@@ -82,7 +82,7 @@ void send_message_all(char *s){
 
 /* Envois un message à l'emetteur */
 void send_message_self(const char *s, int connfd){
-	if(write(connfd, s, strlen(s)+1)<0){
+	if(write(connfd, s, strlen(s))<0){
 		perror("write");
 		exit(-1);
 	}
@@ -174,7 +174,7 @@ void *handle_client(void *arg){
 				if(param){
 					char *old_name = strdup(client->name);
 					strcpy(client->name, param);
-					sprintf(buff_out, "<<RENAME, %s TO %s\r\n", old_name, client->name);
+					sprintf(buff_out, "<<RENAME, %s EN %s\r\n", old_name, client->name);
 					free(old_name);
 					send_message_all(buff_out);
 				}else{
@@ -200,17 +200,23 @@ void *handle_client(void *arg){
 				}else{
 					send_message_self("<<La reference ne peut etre null\r\n", client->connfd);
 				}
-			}else if(!strcmp(command, "\\NB_CLIENT")){
-				sprintf(buff_out, "<<CLIENTS %d\r\n", cli_count);
-				send_message_self(buff_out, client->connfd);
-				send_active_clients(client->connfd);
+			}else if(!strcmp(command, "\\LIST")){
+				int i;
+				for( i = 0; i < MAX_CLIENTS; i++)
+				{
+					if(clients[i]){
+						sprintf(buff_out, "<<Id : %d Nom : %s\r\n", clients[i]->id, clients[i]->name);
+						send_message_self(buff_out, client->connfd);
+					}
+				}
+				strcat(buff_out, "\r\n");
 			}else if(!strcmp(command, "\\HELP")){
 				strcat(buff_out, "\\HELP     Liste commandes\r\n");
 				strcat(buff_out, "\\QUIT     Quitte le chatroom\r\n");
 				strcat(buff_out, "\\PING     Interroge le serveur\r\n");
 				strcat(buff_out, "\\RENAME   <name> Change le surnom\r\n");
 				strcat(buff_out, "\\PRIVATE  <id dest> <msg> message prive\r\n");
-				strcat(buff_out, "\\LIST     Liste clients actifs\r\n");
+				strcat(buff_out, "\\LIST     liste clients actifs\r\n");
 				send_message_self(buff_out, client->connfd);
 			}else{
 				send_message_self("<<commande inconnu\r\n", client->connfd);
